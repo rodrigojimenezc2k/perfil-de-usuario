@@ -29,18 +29,33 @@ export default App;*/
 
 import "./App.css";
 import ProductList from "./components/ProductList";
+import CartSidebar from "./components/CartSidebar";
+import { CartProvider } from "./components/CartContext";
+import { useState } from "react";
+import { FaShoppingCart } from "react-icons/fa"; // icono de carrito
 
 function App() {
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      <h1 className="text-3xl font-bold text-center py-6 text-orange-400">
-        Tienda C2K
-      </h1>
-      <ProductList />
-    </div>
+    <CartProvider>
+      <div className="min-h-screen bg-gray-100 relative">
+        <header className="flex justify-between items-center p-4 bg-white shadow">
+          <h1 className="text-3xl font-bold text-orange-400">Tienda C2K</h1>
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="text-purple-700 hover:text-purple-900 relative"
+          >
+            <FaShoppingCart size={28} />
+          </button>
+        </header>
+
+        <ProductList />
+
+        {isCartOpen && <CartSidebar onClose={() => setIsCartOpen(false)} />}
+      </div>
+    </CartProvider>
   );
 }
 
 export default App;
-
-

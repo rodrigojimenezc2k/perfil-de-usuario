@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useCart } from './CartContext'
 
 const ProductList = () => {
   const [productos, setProductos] = useState([]);
@@ -6,6 +7,8 @@ const ProductList = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const { addToCart } = useCart();
 
   useEffect(() => {
     fetch('https://fakestoreapi.com/products')
@@ -28,6 +31,7 @@ const ProductList = () => {
 
   const handleAddToCart = () => {
     // Lógica para añadir al carrito (a implementar después)
+    addToCart(selectedProduct, quantity);
     alert(`Añadido al carrito: ${quantity} ${selectedProduct.title}`);
     setIsModalOpen(false);
   };
