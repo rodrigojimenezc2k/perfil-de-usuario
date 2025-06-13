@@ -27,6 +27,9 @@ function App() {
 
 export default App;*/
 
+// Ramificación de JorgePardo
+/*  */
+
 import "./App.css";
 import ProductList from "./components/ProductList";
 import CartSidebar from "./components/CartSidebar";
