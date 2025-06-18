@@ -27,6 +27,8 @@ function App() {
 
 export default App;*/
 
+// Ramificación de JGG
+
 import "./App.css";
 import ProductList from "./components/ProductList";
 import CartSidebar from "./components/CartSidebar";
