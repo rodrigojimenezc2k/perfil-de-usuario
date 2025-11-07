@@ -1,11 +1,14 @@
 import "./App.css";
 import React, { useState, useRef, useEffect } from "react";
+import { obtenerTopologias } from "./components/services/topologiasService";
 
 function App() {
 	const [step, setStep] = useState(1);
 	const [count, setCount] = useState("");
 	const [items, setItems] = useState([]);
 	const [error, setError] = useState("");
+	const [topologiasData, setTopologiasData] = useState(null);
+	const [loadingTopologias, setLoadingTopologias] = useState(false);
 	const firstInputRef = useRef(null);
 
 	useEffect(() => {
@@ -19,8 +22,8 @@ function App() {
 		e && e.preventDefault();
 		setError("");
 		const n = parseInt(count, 10);
-		if (!Number.isInteger(n) || n <= 0 || n > 20) {
-			setError("Introduce un número entero entre 1 y 20.");
+		if (!Number.isInteger(n) || n <= 0 || n > 4) {
+			setError("Introduce un número entero entre 1 y 4.");
 			return;
 		}
 		setItems(Array.from({ length: n }, () => ""));
@@ -33,16 +36,36 @@ function App() {
 		setItems(next);
 	};
 
-	const handleSubmitSet = (e) => {
+	const handleSubmitSet = async (e) => {
 		e && e.preventDefault();
+		setError("");
 		const trimmed = items.map((s) => (s || "").trim());
 		if (trimmed.some((s) => s === "")) {
 			setError("Rellena todos los elementos del conjunto.");
 			return;
 		}
+
+		// Axioma: si hay más de un elemento, no debe repetirse ninguno
+		if (trimmed.length > 1) {
+			const uniq = new Set(trimmed);
+			if (uniq.size !== trimmed.length) {
+				setError('Axioma: elementos duplicados detectados. Si pide más de un elemento no puede repetir entradas.');
+				return;
+			}
+		}
 		setItems(trimmed);
-		setError("");
-		setStep(3);
+		// consumir servicio
+		setLoadingTopologias(true);
+		setTopologiasData(null);
+		try {
+			const data = await obtenerTopologias(trimmed);
+			setTopologiasData(data);
+			setStep(3);
+		} catch (err) {
+			setError('Error al generar topologias: ' + (err.message || err));
+		} finally {
+			setLoadingTopologias(false);
+		}
 	};
 
 	const handleReset = () => {
@@ -65,16 +88,17 @@ function App() {
 					--glass: rgba(255,255,255,0.04);
 				}
 				*{box-sizing:border-box}
-				body,html,#root,.app-root{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial}
+				body,html,#root{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial}
 				.app-root{
 					min-height:100vh;
 					background:radial-gradient(800px 400px at 10% 20%, rgba(124,58,237,0.12), transparent),
 							   radial-gradient(600px 300px at 90% 80%, rgba(6,182,212,0.06), transparent),
 							   linear-gradient(180deg,var(--bg1),var(--bg2));
 					display:flex;
-					align-items:center;
+					/* allow content to grow and scroll naturally */
+					align-items:flex-start;
 					justify-content:center;
-					padding:40px;
+					padding:40px 40px 80px;
 					color:#e6eef8;
 				}
 				.scene {
@@ -209,6 +233,16 @@ function App() {
 
 				.error { color:#ffb4b4; margin-top:8px; font-weight:600; }
 
+				/* Topologias cards */
+				.topo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; margin-top:12px }
+				.topo-card { background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; padding:12px; border:1px solid rgba(255,255,255,0.03); box-shadow:0 8px 30px rgba(2,6,23,0.45); transform-origin:center; animation:cardPop .45s ease both }
+				.topo-header { font-weight:700; color:#e6eef8; margin-bottom:8px; }
+				.topo-body { display:flex; flex-direction:column; gap:8px; }
+				.topo-set { background:linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.006)); padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.02); }
+				.brace { color:rgba(230,238,248,0.9); margin-right:6px; font-weight:700 }
+				.topo-card:hover { transform:translateY(-6px) scale(1.02); box-shadow:0 20px 50px rgba(2,6,23,0.6) }
+				@keyframes cardPop { from { transform: translateY(8px) scale(.98); opacity:0 } to { transform:none; opacity:1 } }
+
 				.footer-actions { display:flex; gap:8px; margin-top:12px; justify-content:flex-end; }
 
 				/* responsive */
@@ -263,7 +297,7 @@ function App() {
 									/>
 									<button className="btn" type="submit">Crear campos</button>
 								</div>
-								<div className="helper">Máx. 20 elementos. Usa números, símbolos o nombres.</div>
+								<div className="helper">Máx. 4 elementos ,las topologias crecen mas rapido que una exponencial , para 5 o mas elementos es un problema no computable. Usa números, símbolos , nombres o emojis.</div>
 								{error && <div className="error" role="alert">{error}</div>}
 							</form>
 						)}
@@ -308,21 +342,44 @@ function App() {
 							<div>
 								<div className="panel-title">Conjunto definido</div>
 
-								<div className="result" aria-live="polite">
-									<div className="brace">{'S = {'}</div>
-									<div className="chips" role="list">
-										{items.map((it, idx) => (
-											<div key={idx} className="math-chip" role="listitem" title={`Elemento ${idx+1}`}>
-												{/* pequeño icono decorativo dentro del chip */}
-												<span style={{marginRight:8, opacity:0.9}}>∈</span>
-												{it}
-											</div>
-										))}
-									</div>
-									<div className="brace">{'}'}</div>
+								<div className="helper">Elementos originales:</div>
+								<div style={{marginTop:8, display:'flex', gap:8, flexWrap:'wrap'}}>
+									{items.map((it, idx) => (
+										<span key={idx} className="math-chip" title={`Elemento ${idx+1}`}>{it}</span>
+									))}
 								</div>
 
-								<div className="helper">Puedes volver y editar si lo necesitas.</div>
+								{loadingTopologias && (
+									<div className="helper" style={{marginTop:12}}>Generando topologías, por favor espera…</div>
+								)}
+
+								{topologiasData && (
+									<>
+										<div className="helper" style={{marginTop:12}}>Se encontraron <strong style={{color:'#ffd166'}}>{topologiasData.num_topologias}</strong> topologías</div>
+										<div className="topo-grid" style={{marginTop:12}}>
+											{topologiasData.topologias.map((topo, tIdx) => (
+												<div key={tIdx} className="topo-card" role="article">
+													<div className="topo-header">Topología #{tIdx+1}</div>
+													<div className="topo-body">
+														{topo.map((conj, cIdx) => (
+															<div key={cIdx} className="topo-set">
+																<span className="brace">{'{ '}</span>
+																{conj.length === 0 ? <em className="text-muted">∅</em> : (
+																	<div className="chips" style={{display:'inline-flex',gap:8}}>
+																		{conj.map((el, i) => (
+																			<span key={i} className="math-chip" style={{padding:'6px 8px', fontSize:14}}>{el}</span>
+																		))}
+																	</div>
+																)}
+																<span className="brace">{' }'}</span>
+															</div>
+														))}
+													</div>
+												</div>
+											))}
+										</div>
+									</>
+								)}
 
 								<div className="footer-actions" style={{marginTop:14}}>
 									<button className="small" onClick={() => setStep(2)}>Editar elementos</button>
