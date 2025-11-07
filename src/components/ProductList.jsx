@@ -49,42 +49,44 @@ const ProductList = () => {
     <div className="relative">
       {/* Modal de detalle de producto */}
       {isModalOpen && selectedProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-blue-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-2xl shadow-yellow-500/20 max-w-md w-full max-h-[90vh] overflow-y-auto border-2 border-yellow-500/30">
             <div className="p-6">
               <div className="flex justify-between items-start">
-                <h2 className="text-xl font-bold text-gray-900">{selectedProduct.title}</h2>
+                <h2 className="text-xl font-bold text-blue-900">{selectedProduct.title}</h2>
                 <button 
                   onClick={() => setIsModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                  className="text-blue-800 hover:text-yellow-600 text-2xl transition-colors"
                 >
                   &times;
                 </button>
               </div>
               
               <div className="mt-4 flex justify-center">
-                <img 
-                  src={selectedProduct.image} 
-                  alt={selectedProduct.title} 
-                  className="h-48 object-contain"
-                />
+                <div className="bg-gradient-to-b from-blue-50 to-yellow-50 p-6 rounded-xl shadow-inner">
+                  <img 
+                    src={selectedProduct.image} 
+                    alt={selectedProduct.title} 
+                    className="h-48 object-contain"
+                  />
+                </div>
               </div>
               
-              <p className="mt-4 text-gray-700">{selectedProduct.description}</p>
+              <p className="mt-6 text-blue-900/80 leading-relaxed">{selectedProduct.description}</p>
               
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <div>
-                  <span className="text-sm text-gray-500">Precio:</span>
-                  <p className="text-lg font-bold text-pink-600">${selectedProduct.price}</p>
+              <div className="mt-6 grid grid-cols-2 gap-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <span className="text-sm text-blue-700">Precio:</span>
+                  <p className="text-lg font-bold text-yellow-600">${selectedProduct.price}</p>
                 </div>
-                <div>
-                  <span className="text-sm text-gray-500">Categoría:</span>
-                  <p className="text-sm text-gray-700 capitalize">{selectedProduct.category}</p>
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <span className="text-sm text-blue-700">Categoría:</span>
+                  <p className="text-sm text-blue-800 font-medium capitalize">{selectedProduct.category}</p>
                 </div>
               </div>
               
               <div className="mt-6">
-                <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="quantity" className="block text-sm font-medium text-blue-900 mb-2">
                   Cantidad
                 </label>
                 <input
@@ -93,13 +95,13 @@ const ProductList = () => {
                   min="1"
                   value={quantity}
                   onChange={handleQuantityChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full p-3 border-2 border-yellow-500/30 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-yellow-500 bg-white/50 text-blue-900"
                 />
               </div>
               
               <button
                 onClick={handleAddToCart}
-                className="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 transform hover:scale-[1.02]"
+                className="mt-6 w-full bg-gradient-to-r from-blue-800 to-blue-900 hover:from-blue-700 hover:to-blue-800 text-yellow-400 font-bold py-3 px-4 rounded-lg transition duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-2 border-yellow-500/30"
               >
                 Añadir al carrito
               </button>
@@ -109,23 +111,25 @@ const ProductList = () => {
       )}
 
       {/* Lista de productos */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 p-6 bg-gradient-to-r from-purple-100 via-pink-100 to-yellow-100 min-h-screen">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6 p-6 bg-gradient-to-br from-blue-900 via-blue-800 to-yellow-700 min-h-screen">
         {productos.map(producto => (
           <div
             key={producto.id}
             onClick={() => handleProductClick(producto)}
-            className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-shadow duration-300 p-3 flex flex-col items-center text-center border border-purple-200 cursor-pointer"
+            className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-yellow-300/20 transition-all duration-300 p-4 flex flex-col items-center text-center border-2 border-yellow-500/30 cursor-pointer transform hover:-translate-y-1"
           >
-            <img
-              src={producto.image}
-              alt={producto.title}
-              className="h-16 w-16 max-h-16 max-w-16 object-contain mb-3"
-              style={{ maxHeight: '64px', maxWidth: '64px' }}
-            />
-            <h2 className="text-md font-semibold text-purple-700 mb-1 line-clamp-2">{producto.title}</h2>
-            <p className="text-gray-500 text-sm mb-1 line-clamp-2">{producto.description.slice(0, 60)}...</p>
-            <p className="text-pink-600 font-bold text-md">${producto.price}</p>
-            <span className="mt-1 text-xs text-gray-400 italic">Categoría: {producto.category}</span>
+            <div className="bg-gradient-to-b from-blue-50 to-yellow-50 p-3 rounded-xl mb-3">
+              <img
+                src={producto.image}
+                alt={producto.title}
+                className="h-20 w-20 object-contain mb-3"
+                style={{ maxHeight: '80px', maxWidth: '80px' }}
+              />
+            </div>
+            <h2 className="text-md font-semibold text-blue-900 mb-1 line-clamp-2">{producto.title}</h2>
+            <p className="text-gray-600 text-sm mb-1 line-clamp-2">{producto.description.slice(0, 60)}...</p>
+            <p className="text-yellow-600 font-bold text-lg">${producto.price}</p>
+            <span className="mt-2 px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full font-medium">{producto.category}</span>
           </div>
         ))}
       </div>
