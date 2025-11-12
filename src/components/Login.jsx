@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaStore, FaShoppingBag, FaExchangeAlt } from "react-icons/fa";
+import { useUser } from "../context/UserContext";
 
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
+  const { setUser } = useUser();
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
     role: "",
   });
+  const [bgImage, setBgImage] = useState("");
   const [error, setError] = useState("");
 
   const roles = [
@@ -20,6 +23,12 @@ const Login = ({ onLogin }) => {
       icon: <FaExchangeAlt size={24} />,
     },
   ];
+
+  useEffect(() => {
+    // Selecciona aleatoriamente 1..4 y arma la ruta desde public/
+    const n = Math.floor(Math.random() * 4) + 1;
+    setBgImage(`${process.env.PUBLIC_URL}/${n}.png`);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -33,6 +42,13 @@ const Login = ({ onLogin }) => {
     e.preventDefault();
     if (credentials.email && credentials.password && credentials.role) {
       onLogin(credentials);
+      // Guardar en el store (persistente)
+      setUser({
+        email: credentials.email,
+        role: credentials.role,
+        // nombre opcional: usar email como fallback
+        name: credentials.name || credentials.email.split("@")[0],
+      });
       navigate("/");
       setError("");
     } else {
@@ -53,8 +69,13 @@ const Login = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen relative">
-      {/* Fondo con gradiente universitario */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-900 via-blue-800 to-yellow-700"></div>
+      {/* Fondo aleatorio desde public/1.png..4.png con un degradado superpuesto */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage: `linear-gradient(to bottom right, rgba(2,37,77,0.6), rgba(174,132,22,0.12)), url(${bgImage})`,
+        }}
+      ></div>
       
       {/* Overlay con patrón */}
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.2)_1px,_transparent_1px)] bg-[size:20px_20px]"></div>
@@ -135,6 +156,16 @@ const Login = ({ onLogin }) => {
               Ingresar
             </button>
           </form>
+
+          <p className="text-center text-gray-600 mt-4">
+            ¿No tienes cuenta?{" "}
+            <button
+              onClick={() => navigate("/signup")}
+              className="text-blue-800 hover:text-yellow-600 font-medium transition-colors"
+            >
+              Registrarte aquí
+            </button>
+          </p>
         </div>
       </div>
     </div>
