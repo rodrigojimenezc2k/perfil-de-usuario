@@ -1,12 +1,12 @@
 export async function obtenerTopologias(elementos) {
-  const url = `${process.env.REACT_APP_BACKEND_URL}/topologias`;
 
+  const url = `http://localhost:8000/topologias`;
+  console.log("ruta",url)
   try {
     const res = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.REACT_APP_API_KEY
       },
       body: JSON.stringify({ elementos })
     });

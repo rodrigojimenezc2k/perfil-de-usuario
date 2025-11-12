@@ -1,6 +1,7 @@
 import "./App.css";
 import React, { useState, useRef, useEffect } from "react";
 import { obtenerTopologias } from "./components/services/topologiasService";
+import TopologyProofModal from "./components/TopologyProofModal";
 
 function App() {
 	const [step, setStep] = useState(1);
@@ -9,7 +10,20 @@ function App() {
 	const [error, setError] = useState("");
 	const [topologiasData, setTopologiasData] = useState(null);
 	const [loadingTopologias, setLoadingTopologias] = useState(false);
+	const [selectedTopoIndex, setSelectedTopoIndex] = useState(null);
 	const firstInputRef = useRef(null);
+
+	const objetoTopoDelVacio = {
+		"elementos_originales": [
+			"∅"
+		],
+		"num_topologias": 1,
+		"topologias": [
+			[
+				["∅"]
+			]
+		]
+	}
 
 	useEffect(() => {
 		if (step === 2) {
@@ -22,8 +36,8 @@ function App() {
 		e && e.preventDefault();
 		setError("");
 		const n = parseInt(count, 10);
-		if (!Number.isInteger(n) || n <= 0 || n > 4) {
-			setError("Introduce un número entero entre 1 y 4.");
+		if (!Number.isInteger(n) || n <= -1 || n > 4) {
+			setError("Introduce un número entero entre 0 y 4.");
 			return;
 		}
 		setItems(Array.from({ length: n }, () => ""));
@@ -38,6 +52,12 @@ function App() {
 
 	const handleSubmitSet = async (e) => {
 		e && e.preventDefault();
+		if (items.length === 0) {
+			//setItems(["∅"])
+			setTopologiasData(objetoTopoDelVacio)
+			setStep(3)
+			return
+		}
 		setError("");
 		const trimmed = items.map((s) => (s || "").trim());
 		if (trimmed.some((s) => s === "")) {
@@ -235,13 +255,15 @@ function App() {
 
 				/* Topologias cards */
 				.topo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; margin-top:12px }
-				.topo-card { background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; padding:12px; border:1px solid rgba(255,255,255,0.03); box-shadow:0 8px 30px rgba(2,6,23,0.45); transform-origin:center; animation:cardPop .45s ease both }
+				.topo-card { background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:12px; padding:12px; border:1px solid rgba(255,255,255,0.03); box-shadow:0 8px 30px rgba(2,6,23,0.45); transform-origin:center; animation:cardPop .45s ease both; position:relative }
 				.topo-header { font-weight:700; color:#e6eef8; margin-bottom:8px; }
-				.topo-body { display:flex; flex-direction:column; gap:8px; }
-				.topo-set { background:linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.006)); padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.02); }
-				.brace { color:rgba(230,238,248,0.9); margin-right:6px; font-weight:700 }
+				.topo-body { display:flex; flex-direction:column; gap:8px; margin-bottom:12px }
+				.topo-set { background:linear-gradient(90deg, rgba(255,255,255,0.01), rgba(255,255,255,0.006)); padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.02); font-size:0.9rem; }
 				.topo-card:hover { transform:translateY(-6px) scale(1.02); box-shadow:0 20px 50px rgba(2,6,23,0.6) }
 				@keyframes cardPop { from { transform: translateY(8px) scale(.98); opacity:0 } to { transform:none; opacity:1 } }
+
+				.topo-btn { padding:8px 12px; border-radius:8px; border:0; background:linear-gradient(90deg, rgba(124,58,237,0.4), rgba(6,182,212,0.3)); color:#e6eef8; cursor:pointer; font-weight:600; font-size:0.9rem; transition:all .2s ease; width:100% }
+				.topo-btn:hover { background:linear-gradient(90deg, rgba(124,58,237,0.6), rgba(6,182,212,0.5)); transform:translateY(-2px); box-shadow:0 8px 20px rgba(124,58,237,0.2) }
 
 				.footer-actions { display:flex; gap:8px; margin-top:12px; justify-content:flex-end; }
 
@@ -251,6 +273,15 @@ function App() {
 				}
 			`}</style>
 
+			{/* Modal de demostración */}
+			<TopologyProofModal
+				isOpen={selectedTopoIndex !== null}
+				topologia={topologiasData && selectedTopoIndex !== null ? topologiasData.topologias[selectedTopoIndex] : null}
+				elements={items}
+				topoIndex={selectedTopoIndex || 0}
+				onClose={() => setSelectedTopoIndex(null)}
+			/>
+
 			<div className="scene" role="main" aria-labelledby="app-title">
 				<div className="header">
 					<div className="logo" aria-hidden>
@@ -258,13 +289,13 @@ function App() {
 						<svg width="40" height="40" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
 							<defs>
 								<linearGradient id="g1" x1="0" x2="1">
-									<stop offset="0" stopColor="#7c3aed"/><stop offset="1" stopColor="#06b6d4"/>
+									<stop offset="0" stopColor="#7c3aed" /><stop offset="1" stopColor="#06b6d4" />
 								</linearGradient>
 							</defs>
-							<circle cx="32" cy="32" r="30" fill="url(#g1)" opacity="0.15"/>
+							<circle cx="32" cy="32" r="30" fill="url(#g1)" opacity="0.15" />
 							<g transform="translate(12,10)" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.95">
 								<path d="M4 28 C8 10,28 6,36 18" fill="none" strokeOpacity="0.9" />
-								<path d="M2 20 L12 12 L22 20" fill="none" strokeOpacity="0.9"/>
+								<path d="M2 20 L12 12 L22 20" fill="none" strokeOpacity="0.9" />
 							</g>
 							<text x="6" y="52" fill="#fff" fontSize="10" fontWeight="700" opacity="0.9">Σ∈</text>
 						</svg>
@@ -273,9 +304,9 @@ function App() {
 					<div>
 						<h1 id="app-title" className="title">Constructor de Topologias para conjuntos finitos</h1>
 						<div className="subtitle">
-  Introduce cuántos elementos tiene el conjunto y luego sus valores. 
-  Topologías (τ) para (X).
-</div>
+							Introduce cuántos elementos tiene el conjunto y luego sus valores.
+							Topologías (τ) para (X).
+						</div>
 					</div>
 				</div>
 
@@ -289,7 +320,7 @@ function App() {
 										aria-label="Número de elementos"
 										className="num"
 										type="number"
-										min="1"
+										min="0"
 										max="20"
 										value={count}
 										onChange={(e) => setCount(e.target.value)}
@@ -297,31 +328,31 @@ function App() {
 									/>
 									<button className="btn" type="submit">Crear campos</button>
 								</div>
-								<div className="helper">Máx. 4 elementos ,las topologias crecen mas rapido que una exponencial , para 5 o mas elementos es un problema no computable. Usa números, símbolos , nombres o emojis.</div>
+								<div className="helper">Máx. 4 elementos. Las topologías crecen más rápido que una exponencial. Para 5 o más elementos es un problema no computable. Usa números, símbolos, nombres o emojis.</div>
 								{error && <div className="error" role="alert">{error}</div>}
 							</form>
 						)}
 
 						{step === 2 && (
 							<form onSubmit={handleSubmitSet}>
-								<div className="panel-title" style={{marginBottom:10}}>Introduce cada elemento</div>
+								<div className="panel-title" style={{ marginBottom: 10 }}>{items.length === 0 ? "Conjunto vacío ∅" : "Introduce cada elemento"}</div>
 								<div className="inputs-grid">
 									{items.map((val, i) => (
 										<label key={i} className="element-card">
 											<div className="icon-wrap" aria-hidden>
 												{/* iconos SVG variados: toroide-ish, conjunto, sigma */}
-												{ i % 3 === 0 ? (
-													<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" stroke="white" strokeOpacity="0.9" strokeWidth="1.6"/></svg>
+												{i % 3 === 0 ? (
+													<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" stroke="white" strokeOpacity="0.9" strokeWidth="1.6" /></svg>
 												) : i % 3 === 1 ? (
-													<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 6 L18 6 L12 18 Z" stroke="white" strokeWidth="1.6" strokeOpacity="0.95" fill="none"/></svg>
+													<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 6 L18 6 L12 18 Z" stroke="white" strokeWidth="1.6" strokeOpacity="0.95" fill="none" /></svg>
 												) : (
-													<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 7h6M6 12h10M6 17h6" stroke="white" strokeWidth="1.6" strokeOpacity="0.95" strokeLinecap="round"/></svg>
+													<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 7h6M6 12h10M6 17h6" stroke="white" strokeWidth="1.6" strokeOpacity="0.95" strokeLinecap="round" /></svg>
 												)}
 											</div>
 											<input
-												ref={i===0?firstInputRef:null}
+												ref={i === 0 ? firstInputRef : null}
 												className="input"
-												placeholder={`Elemento ${i+1} (ej: a${i+1})`}
+												placeholder={`Elemento ${i + 1} (ej: a${i + 1})`}
 												value={val}
 												onChange={(e) => handleElementChange(i, e.target.value)}
 											/>
@@ -343,31 +374,31 @@ function App() {
 								<div className="panel-title">Conjunto definido</div>
 
 								<div className="helper">Elementos originales:</div>
-								<div style={{marginTop:8, display:'flex', gap:8, flexWrap:'wrap'}}>
-									{items.map((it, idx) => (
-										<span key={idx} className="math-chip" title={`Elemento ${idx+1}`}>{it}</span>
+								<div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+									{items.length === 0 ? <span key="1" className="math-chip" title={`Elemento `}>{"∅"}</span> : items.map((it, idx) => (
+										<span key={idx} className="math-chip" title={`Elemento ${idx + 1}`}>{it}</span>
 									))}
 								</div>
 
 								{loadingTopologias && (
-									<div className="helper" style={{marginTop:12}}>Generando topologías, por favor espera…</div>
+									<div className="helper" style={{ marginTop: 12 }}>Generando topologías, por favor espera…</div>
 								)}
 
 								{topologiasData && (
 									<>
-										<div className="helper" style={{marginTop:12}}>Se encontraron <strong style={{color:'#ffd166'}}>{topologiasData.num_topologias}</strong> topologías</div>
-										<div className="topo-grid" style={{marginTop:12}}>
+										<div className="helper" style={{ marginTop: 12 }}>Se encontraron <strong style={{ color: '#ffd166' }}>{topologiasData.num_topologias}</strong> topologías</div>
+										<div className="topo-grid" style={{ marginTop: 12 }}>
 											{topologiasData.topologias.map((topo, tIdx) => (
 												<div key={tIdx} className="topo-card" role="article">
-													<div className="topo-header">Topología #{tIdx+1}</div>
+													<div className="topo-header">Topología #{tIdx + 1}</div>
 													<div className="topo-body">
 														{topo.map((conj, cIdx) => (
 															<div key={cIdx} className="topo-set">
 																<span className="brace">{'{ '}</span>
 																{conj.length === 0 ? <em className="text-muted">∅</em> : (
-																	<div className="chips" style={{display:'inline-flex',gap:8}}>
+																	<div className="chips" style={{ display: 'inline-flex', gap: 8 }}>
 																		{conj.map((el, i) => (
-																			<span key={i} className="math-chip" style={{padding:'6px 8px', fontSize:14}}>{el}</span>
+																			<span key={i} className="math-chip" style={{ padding: '6px 8px', fontSize: 14 }}>{el}</span>
 																		))}
 																	</div>
 																)}
@@ -375,13 +406,19 @@ function App() {
 															</div>
 														))}
 													</div>
+													<button
+														className="topo-btn"
+														onClick={() => setSelectedTopoIndex(tIdx)}
+													>
+														🔍 Ver demostración
+													</button>
 												</div>
 											))}
 										</div>
 									</>
 								)}
 
-								<div className="footer-actions" style={{marginTop:14}}>
+								<div className="footer-actions" style={{ marginTop: 14 }}>
 									<button className="small" onClick={() => setStep(2)}>Editar elementos</button>
 									<button className="btn" onClick={() => alert("Conjunto guardado: " + JSON.stringify(items))}>Guardar</button>
 								</div>
@@ -390,28 +427,28 @@ function App() {
 					</div>
 
 					{/* panel derecho: explicación/visualización topológica */}
-					<div className="panel" aria-hidden={step===2?false:true}>
+					<div className="panel" aria-hidden={step === 2 ? false : true}>
 						<p className="panel-title">Visual Topológica</p>
-						<div style={{display:'flex',gap:12,alignItems:'center',flexWrap:'wrap'}}>
-							<div style={{flex:'0 0 120px'}}>
-								<svg viewBox="0 0 120 80" width="120" height="80" style={{display:'block'}}>
+						<div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+							<div style={{ flex: '0 0 120px' }}>
+								<svg viewBox="0 0 120 80" width="120" height="80" style={{ display: 'block' }}>
 									<defs>
-										<linearGradient id="lg" x1="0" x2="1"><stop offset="0" stopColor="#7c3aed"/><stop offset="1" stopColor="#06b6d4"/></linearGradient>
+										<linearGradient id="lg" x1="0" x2="1"><stop offset="0" stopColor="#7c3aed" /><stop offset="1" stopColor="#06b6d4" /></linearGradient>
 									</defs>
 									<g fill="none" stroke="url(#lg)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" opacity="0.95">
-										<path d="M14 40 C22 18, 48 12, 62 22 C76 32, 100 28, 106 18" strokeOpacity="0.12"/>
+										<path d="M14 40 C22 18, 48 12, 62 22 C76 32, 100 28, 106 18" strokeOpacity="0.12" />
 										<ellipse cx="60" cy="40" rx="32" ry="18" strokeOpacity="0.22" />
 										<path d="M34 46 C40 58, 76 58, 86 46" strokeOpacity="0.16" />
 									</g>
 								</svg>
 							</div>
 
-							<div style={{flex:1}}>
+							<div style={{ flex: 1 }}>
 								<div className="helper">Calcula todas la topologias de tu conjunto finito y no te quedes sin enterarte de todas las posibilidades!</div>
-								<ul style={{marginTop:12,lineHeight:1.6}}>
+								<ul style={{ marginTop: 12, lineHeight: 1.6 }}>
 									<li>Introduce el número de elementos.</li>
 									<li>Asigna nombres o símbolos (ej: a, 1, ∞, A).</li>
-									<li>Te sorprendera saber las posibles topologias que se pueden definir.</li>
+									<li>Te sorprenderá saber las posibles topologías que se pueden definir.</li>
 								</ul>
 							</div>
 						</div>
