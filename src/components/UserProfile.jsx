@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
-import { FaEdit, FaSave, FaSignOutAlt, FaArrowLeft, FaCalendarAlt, FaShoppingCart, FaGraduationCap, FaCircle } from "react-icons/fa";
+import { FaEdit, FaSave, FaSignOutAlt, FaArrowLeft, FaCalendarAlt, FaShoppingCart, FaGraduationCap , FaClock} from "react-icons/fa";
 
 export default function UserProfile() {
   const { user, setUser, clearUser } = useUser();
@@ -270,13 +270,47 @@ export default function UserProfile() {
                           <div className="mt-3 flex flex-col gap-2 text-sm">
                             {evs ? evs.slice(0, 3).map((e, i) => {
                               const key = `${dateStr}-${i}`;
-                              const color = e.type === "unam" ? "bg-red-500" : e.type === "appointment" ? "bg-yellow-500" : "bg-blue-500";
-                              const Icon = e.type === "unam" ? FaGraduationCap : e.type === "appointment" ? FaShoppingCart : FaCalendarAlt;
+
+                              // Different styles for different event types
+                              let bgColor, borderColor, textColor, Icon;
+
+                              if (e.type === "unam") {
+                                bgColor = "bg-red-50";
+                                borderColor = "border-red-300";
+                                textColor = "text-red-700";
+                                Icon = FaGraduationCap;
+                              } else if (e.type === "appointment") {
+                                bgColor = "bg-gradient-to-r from-yellow-50 to-orange-50";
+                                borderColor = "border-yellow-400";
+                                textColor = "text-yellow-800";
+                                Icon = FaShoppingCart;
+                              } else {
+                                bgColor = "bg-blue-50";
+                                borderColor = "border-blue-300";
+                                textColor = "text-blue-700";
+                                Icon = FaCalendarAlt;
+                              }
+
                               return (
-                                <div key={key} title={e.title} className="flex items-center gap-2">
-                                  <span className={`w-2 h-2 rounded-full ${color} inline-block animate-pulse`} />
-                                  <Icon className="text-sm text-gray-600" />
-                                  <span className="text-sm md:text-base text-gray-700 truncate">{e.title}</span>
+                                <div
+                                  key={key}
+                                  title={e.seller ? `${e.title}\nVendedor: ${e.seller}` : e.title}
+                                  className={`flex items-start gap-2 p-2 rounded-md border ${bgColor} ${borderColor} transform transition-all duration-300 hover:scale-105 hover:shadow-md cursor-pointer`}
+                                >
+                                  <Icon className={`text-sm mt-0.5 flex-shrink-0 ${textColor}`} />
+                                  <div className="flex-1 min-w-0">
+                                    <div className={`text-xs font-medium ${textColor} truncate`}>{e.title}</div>
+                                    {e.seller && (
+                                      <div className="text-xs text-gray-600 mt-0.5 truncate">
+                                        {e.seller}
+                                      </div>
+                                    )}
+                                    {e.time && (
+                                      <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                                        <FaClock className="text-xs" /> {e.time}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             }) : (

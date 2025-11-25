@@ -2,33 +2,25 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from './CartContext';
 import { useUser } from '../context/UserContext';
-import { FaCalendarAlt, FaClock, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaCalendarAlt, FaMapMarkerAlt } from 'react-icons/fa';
 
 const CartSidebar = ({ onClose }) => {
   const { cartItems, totalPrice, removeFromCart, removeItems } = useCart();
   const { user, addAppointment } = useUser();
   const navigate = useNavigate();
 
-  const [schedulingFor, setSchedulingFor] = useState(null); // { sellerName, items }
+  const [schedulingFor, setSchedulingFor] = useState(null); // { product }
   const [meetingDate, setMeetingDate] = useState("");
   const [meetingTime, setMeetingTime] = useState("");
   const [meetingLocation, setMeetingLocation] = useState("Punto Medio FES-A");
 
-  // Agrupar por vendedor
-  const groupedItems = cartItems.reduce((acc, item) => {
-    const sellerName = item.seller?.name || "Vendedor Desconocido";
-    if (!acc[sellerName]) acc[sellerName] = [];
-    acc[sellerName].push(item);
-    return acc;
-  }, {});
-
-  const handleScheduleClick = (sellerName, items) => {
+  const handleScheduleClick = (product) => {
     if (!user) {
       alert("Debes iniciar sesión para agendar un encuentro.");
       navigate("/login");
       return;
     }
-    setSchedulingFor({ sellerName, items });
+    setSchedulingFor(product);
   };
 
   const handleConfirmMeeting = () => {
@@ -39,22 +31,22 @@ const CartSidebar = ({ onClose }) => {
 
     const appointment = {
       id: Date.now(),
-      title: `Encuentro con ${schedulingFor.sellerName}`,
+      title: `Encuentro - ${schedulingFor.title}`,
       date: meetingDate,
       time: meetingTime,
       location: meetingLocation,
-      items: schedulingFor.items,
+      product: schedulingFor,
       type: "appointment",
-      seller: schedulingFor.sellerName
+      seller: schedulingFor.seller?.name || "Vendedor",
+      sellerInfo: schedulingFor.seller
     };
 
     addAppointment(appointment);
 
-    // Remover items del carrito
-    const itemIds = schedulingFor.items.map(i => i.id);
-    removeItems(itemIds);
+    // Remover producto del carrito
+    removeItems([schedulingFor.id]);
 
-    alert(`¡Encuentro agendado con ${schedulingFor.sellerName} para el ${meetingDate} a las ${meetingTime}!`);
+    alert(`¡Encuentro agendado para ${schedulingFor.title} el ${meetingDate} a las ${meetingTime}!`);
     setSchedulingFor(null);
     setMeetingDate("");
     setMeetingTime("");
@@ -75,46 +67,55 @@ const CartSidebar = ({ onClose }) => {
             <p>Tu carrito está vacío.</p>
           </div>
         ) : (
-          Object.entries(groupedItems).map(([sellerName, items]) => (
-            <div key={sellerName} className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-              <h3 className="font-bold text-blue-900 border-b pb-2 mb-3 flex justify-between items-center">
-                <span>{sellerName}</span>
-                <span className="text-xs font-normal text-gray-500">{items.length} items</span>
-              </h3>
-
-              {items.map(item => (
-                <div key={item.id} className="mb-3 flex justify-between items-start text-sm">
-                  <div>
-                    <div className="font-medium text-gray-800">{item.title}</div>
-                    <div className="text-gray-500">Cant: {item.quantity} x ${item.price}</div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className="font-bold text-gray-700">${(item.price * item.quantity).toFixed(2)}</span>
-                    <button
-                      onClick={() => removeFromCart(item.id)}
-                      className="text-xs text-red-500 hover:text-red-700 mt-1"
-                    >
-                      Eliminar
-                    </button>
+          <div className="space-y-4">
+            {cartItems.map(item => (
+              <div key={item.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                {/* Imagen del producto */}
+                <div className="flex gap-3 mb-3">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-16 h-16 object-contain rounded bg-gray-50"
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-800 text-sm line-clamp-2">{item.title}</h4>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Vendedor: {item.seller?.name || "Desconocido"}
+                    </p>
                   </div>
                 </div>
-              ))}
 
-              <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
-                <span className="font-bold text-gray-700">Subtotal:</span>
-                <span className="font-bold text-yellow-600 text-lg">
-                  ${items.reduce((acc, i) => acc + i.price * i.quantity, 0).toFixed(2)}
-                </span>
+                {/* Detalles de precio */}
+                <div className="flex justify-between items-center text-sm mb-3">
+                  <div>
+                    <div className="text-gray-600">Cantidad: {item.quantity}</div>
+                    <div className="text-gray-600">Precio: ${item.price}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-yellow-600 text-lg">
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Botones de acción */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleScheduleClick(item)}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-medium transition flex items-center justify-center gap-2 text-sm"
+                  >
+                    <FaCalendarAlt /> Agendar
+                  </button>
+                  <button
+                    onClick={() => removeFromCart(item.id)}
+                    className="px-4 py-2 border border-red-500 text-red-500 hover:bg-red-50 rounded-md text-sm transition"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </div>
-
-              <button
-                onClick={() => handleScheduleClick(sellerName, items)}
-                className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-md font-medium transition flex items-center justify-center gap-2"
-              >
-                <FaCalendarAlt /> Agendar Encuentro
-              </button>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
 
@@ -124,7 +125,7 @@ const CartSidebar = ({ onClose }) => {
           <span>${totalPrice.toFixed(2)}</span>
         </div>
         <p className="text-xs text-gray-500 text-center">
-          * El pago se realiza durante el encuentro con cada vendedor.
+          * Cada producto requiere una cita individual con su vendedor.
         </p>
       </div>
 
@@ -132,9 +133,15 @@ const CartSidebar = ({ onClose }) => {
       {schedulingFor && (
         <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-sm animate-scaleIn">
-            <h3 className="text-lg font-bold text-blue-900 mb-4">
-              Acordar encuentro con {schedulingFor.sellerName}
+            <h3 className="text-lg font-bold text-blue-900 mb-2">
+              Agendar Encuentro
             </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              {schedulingFor.title}
+            </p>
+            <p className="text-xs text-gray-500 mb-4">
+              Vendedor: {schedulingFor.seller?.name || "Desconocido"}
+            </p>
 
             <div className="space-y-4">
               <div>
@@ -189,6 +196,22 @@ const CartSidebar = ({ onClose }) => {
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes scaleIn {
+          from {
+            transform: scale(0.9);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.2s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

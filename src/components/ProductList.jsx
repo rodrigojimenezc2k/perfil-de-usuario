@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useCart } from './CartContext'
-import { FaHeart, FaStar, FaShoppingCart, FaUser, FaMapMarkerAlt, FaPhone, FaEnvelope } from "react-icons/fa";
+import { FaHeart, FaStar, FaShoppingCart, FaMapMarkerAlt, FaEnvelope } from "react-icons/fa";
 
 const ProductList = ({ activeCategory }) => {
   const [productos, setProductos] = useState([]);
@@ -69,6 +69,43 @@ const ProductList = ({ activeCategory }) => {
   if (loading) {
     return <div className="text-center text-lg p-10">Cargando productos...</div>;
   }
+
+  // Filter products
+  const filteredProducts = productos.filter(p => {
+    if (!activeCategory || activeCategory === 'variedades') return true;
+
+    // Filter "Ropa" category by specific product titles
+    if (activeCategory === 'ropa') {
+      const ropaProducts = [
+        'Mens Casual Premium Slim Fit T-Shirts',
+        'Mens Cotton Jacket',
+        'Mens Casual Slim Fit',
+        "BIYLACLESEN Women's 3-in-1 Snowboard Jacket Winter Coats",
+        "Lock and Love Women's Removable Hooded Faux Leather Moto Biker Jacket",
+        'Rain Jacket Women Windbreaker Striped Climbing Raincoats',
+        "MBJ Women's Short Sleeve Boat Neck V",
+        "Opna Women's Short Sleeve Moisture",
+        'DANVOUY Womens T Shirt Casual Cotton Short'
+      ];
+      return ropaProducts.some(name => p.title.includes(name));
+    }
+
+    // Filter "Accesorios" category by specific product titles
+    if (activeCategory === 'accesorios') {
+      const accesoriosProducts = [
+        'WD 2TB Elements Portable External Hard Drive - USB 3.0',
+        'SanDisk SSD PLUS 1TB Internal SSD - SATA III 6 Gb/s',
+        'Silicon Power 256GB SSD 3D NAND A55 SLC Cache Performance Boost SATA III 2.5',
+        'WD 4TB Gaming Drive Works with Playstation 4 Portable External Hard Drive',
+        'Acer SB220Q bi 21.5 inches Full HD (1920 x 1080) IPS Ultra-Thin',
+        'Samsung 49-Inch CHG90 144Hz Curved Gaming Monitor (LC49HG90DMNXZA) – Super Ultrawide Screen QLED'
+      ];
+      return accesoriosProducts.some(name => p.title.includes(name));
+    }
+
+    // Default filter by category
+    return p.category === activeCategory;
+  });
 
   return (
     <div className="relative">
@@ -208,30 +245,16 @@ const ProductList = ({ activeCategory }) => {
       {/* Lista de productos mejorada */}
       <div className="p-6 bg-gradient-to-br from-blue-900 via-blue-800 to-yellow-700 min-h-screen">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {productos
-            .filter(p => {
-              if (!activeCategory || activeCategory === 'variedades') return true;
-
-              // Filter "Ropa" category by specific product titles
-              if (activeCategory === 'ropa') {
-                const ropaProducts = [
-                  'Mens Casual Premium Slim Fit T-Shirts',
-                  'Mens Cotton Jacket',
-                  'Mens Casual Slim Fit',
-                  "BIYLACLESEN Women's 3-in-1 Snowboard Jacket Winter Coats",
-                  "Lock and Love Women's Removable Hooded Faux Leather Moto Biker Jacket",
-                  'Rain Jacket Women Windbreaker Striped Climbing Raincoats',
-                  "MBJ Women's Short Sleeve Boat Neck V",
-                  "Opna Women's Short Sleeve Moisture",
-                  'DANVOUY Womens T Shirt Casual Cotton Short'
-                ];
-                return ropaProducts.some(name => p.title.includes(name));
-              }
-
-              // Default filter by category
-              return p.category === activeCategory;
-            })
-            .map(producto => {
+          {filteredProducts.length === 0 ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-20">
+              <div className="text-center">
+                <div className="text-6xl mb-4">📦</div>
+                <h3 className="text-2xl font-bold text-white mb-2">No hay productos disponibles</h3>
+                <p className="text-yellow-200">No se encontraron productos en esta categoría</p>
+              </div>
+            </div>
+          ) : (
+            filteredProducts.map(producto => {
               const seller = generateSeller(producto.id);
               const productWithSeller = { ...producto, seller };
               return (
@@ -305,7 +328,8 @@ const ProductList = ({ activeCategory }) => {
                   </div>
                 </article>
               );
-            })}
+            })
+          )}
         </div>
       </div>
     </div>
