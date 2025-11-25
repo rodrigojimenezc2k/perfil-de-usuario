@@ -14,6 +14,32 @@ const TopologyProofModal = ({ isOpen, topologia, elements, topoIndex, onClose })
 		// topo es un array de arrays (subconjuntos)
 		// elems es el array de elementos originales
 
+		// Helper: verificar si un conjunto representa el vacío
+		const isEmptyRepresentation = (set) => {
+			// Caso 1: array vacío literal []
+			if (set.length === 0) return true;
+			// Caso 2: array con un solo elemento "∅" que representa el conjunto vacío
+			if (set.length === 1 && set[0] === "∅") return true;
+			return false;
+		};
+
+		// Helper: verificar si un conjunto representa el conjunto completo X
+		const isCompleteSet = (set, originalElements) => {
+			if (originalElements.length === 0) {
+				// Si el conjunto original es vacío, X es la representación del vacío
+				return isEmptyRepresentation(set);
+			}
+			// Si el conjunto tiene diferente longitud que los elementos originales, no es X
+			if (set.length !== originalElements.length) return false;
+			// Verificar que todos los elementos originales están en el conjunto
+			return originalElements.every(e => set.includes(e));
+		};
+
+		// Helper: convertir un set a string para comparación
+		const setToComparable = (set) => {
+			return JSON.stringify(Array.from(set).sort());
+		};
+
 		const topoSets = topo.map(set => new Set(set));
 		const elemSet = new Set(elems);
 		const emptySet = new Set();
@@ -25,16 +51,16 @@ const TopologyProofModal = ({ isOpen, topologia, elements, topoIndex, onClose })
 			checks: [
 				{
 					label: "∅ ∈ τ",
-					passed: topo.some(set => set.length === 0),
-					explanation: topo.some(set => set.length === 0) ? "✓ El conjunto vacío está en la topología." : "✗ El conjunto vacío NO está en la topología."
+					passed: topo.some(set => isEmptyRepresentation(set)),
+					explanation: topo.some(set => isEmptyRepresentation(set)) ? "✓ El conjunto vacío está en la topología." : "✗ El conjunto vacío NO está en la topología."
 				},
 				{
 					label: "X ∈ τ",
-					passed: topo.some(set => set.length === elems.length && elems.every(e => set.includes(e))),
-					explanation: topo.some(set => set.length === elems.length && elems.every(e => set.includes(e))) ? `✓ El conjunto completo ${JSON.stringify(elems)} está en la topología.` : "✗ El conjunto completo NO está en la topología."
+					passed: topo.some(set => isCompleteSet(set, elems)),
+					explanation: topo.some(set => isCompleteSet(set, elems)) ? `✓ El conjunto completo ${JSON.stringify(elems)} está en la topología.` : "✗ El conjunto completo NO está en la topología."
 				}
 			],
-			passed: topo.some(set => set.length === 0) && topo.some(set => set.length === elems.length && elems.every(e => set.includes(e)))
+			passed: topo.some(set => isEmptyRepresentation(set)) && topo.some(set => isCompleteSet(set, elems))
 		};
 
 		// Axioma 2: Unión de elementos en τ está en τ
