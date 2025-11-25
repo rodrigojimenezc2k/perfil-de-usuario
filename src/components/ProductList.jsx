@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useCart } from './CartContext'
 import { FaHeart, FaStar, FaShoppingCart, FaUser, FaMapMarkerAlt, FaPhone, FaEnvelope } from "react-icons/fa";
 
-const ProductList = () => {
+const ProductList = ({ activeCategory }) => {
   const [productos, setProductos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -27,7 +27,7 @@ const ProductList = () => {
 
   // Generar URL de avatar
   const getAvatarUrl = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=200`;
- 
+
   // Añade al carrito mostrando un toast animado en lugar de alert()
   const addProductToCartWithToast = (producto, qty = 1) => {
     addToCart(producto, qty);
@@ -82,27 +82,27 @@ const ProductList = () => {
                 {/* Header con botón cerrar */}
                 <div className="flex justify-between items-start mb-4">
                   <h2 className="text-2xl font-bold text-blue-900 flex-1">{selectedProduct.title}</h2>
-                  <button 
+                  <button
                     onClick={() => setIsModalOpen(false)}
                     className="text-blue-800 hover:text-yellow-600 text-2xl transition-colors ml-4"
                   >
                     &times;
                   </button>
                 </div>
-                
+
                 {/* Producto e Imagen */}
                 <div className="mt-4 flex justify-center">
                   <div className="bg-gradient-to-b from-blue-50 to-yellow-50 p-6 rounded-xl shadow-inner">
-                    <img 
-                      src={selectedProduct.image} 
-                      alt={selectedProduct.title} 
+                    <img
+                      src={selectedProduct.image}
+                      alt={selectedProduct.title}
                       className="h-48 object-contain"
                     />
                   </div>
                 </div>
-                
+
                 <p className="mt-6 text-blue-900/80 leading-relaxed">{selectedProduct.description}</p>
-                
+
                 <div className="mt-6 grid grid-cols-2 gap-4">
                   <div className="bg-blue-50 p-3 rounded-lg">
                     <span className="text-sm text-blue-700">Precio:</span>
@@ -119,13 +119,13 @@ const ProductList = () => {
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
                     <div className="flex-shrink-0">
-                      <img 
-                        src={getAvatarUrl(seller.name)} 
+                      <img
+                        src={getAvatarUrl(seller.name)}
                         alt={seller.name}
                         className="w-16 h-16 rounded-full shadow-md border-2 border-yellow-400 object-cover transform transition-transform duration-300 hover:scale-110"
                       />
                     </div>
-                    
+
                     {/* Info vendedor */}
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
@@ -133,7 +133,7 @@ const ProductList = () => {
                           <h3 className="text-lg font-semibold text-blue-900">{seller.name}</h3>
                           <div className="flex items-center gap-1 mt-1">
                             <div className="flex gap-0.5">
-                              {Array.from({length: Math.floor(seller.rating)}).map((_,i)=>(
+                              {Array.from({ length: Math.floor(seller.rating) }).map((_, i) => (
                                 <FaStar key={i} className="text-yellow-400 text-sm" />
                               ))}
                             </div>
@@ -181,7 +181,7 @@ const ProductList = () => {
                     className="w-full p-3 border-2 border-yellow-500/30 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-yellow-500 bg-white/50 text-blue-900"
                   />
                 </div>
-                
+
                 <button
                   onClick={handleAddToCart}
                   className="mt-6 w-full bg-gradient-to-r from-blue-800 to-blue-900 hover:from-blue-700 hover:to-blue-800 text-yellow-400 font-bold py-3 px-4 rounded-lg transition duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl border-2 border-yellow-500/30"
@@ -208,90 +208,113 @@ const ProductList = () => {
       {/* Lista de productos mejorada */}
       <div className="p-6 bg-gradient-to-br from-blue-900 via-blue-800 to-yellow-700 min-h-screen">
         <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          {productos.map(producto => {
-            const seller = generateSeller(producto.id);
-            return (
-              <article
-                key={producto.id}
-                onClick={() => handleProductClick(producto)}
-                className="relative group perspective cursor-pointer"
-              >
-                {/* Animated gradient border */}
-                <div className="card-border rounded-3xl p-[2px]">
-                  <div className="card-bg rounded-3xl bg-white/95 backdrop-blur-sm p-5 flex flex-col h-full transition-transform duration-500 transform-gpu group-hover:scale-[1.02] group-hover:-translate-y-2 shadow-lg">
-                    {/* image + floating */}
-                    <div className="relative flex items-center justify-center">
-                      <div className="img-wrap w-40 h-40 flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-50 to-yellow-50 shadow-inner -mt-10 transform transition-all duration-700 group-hover:translate-y-[-6px]">
-                        <img src={producto.image} alt={producto.title} className="max-h-32 max-w-32 object-contain transform transition-transform duration-700 group-hover:scale-105" />
-                      </div>
-                      {/* quick action overlay */}
-                      <div className="absolute right-3 top-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <button onClick={(e)=>{ e.stopPropagation(); addProductToCartWithToast(producto,1); }} title="Añadir al carrito" className="action-btn bg-yellow-500 text-white shadow-md">
-                          <FaShoppingCart />
-                        </button>
-                        <button onClick={(e)=>{ e.stopPropagation(); addProductToCartWithToast(producto,1); }} title="Favorito" className="action-btn bg-pink-500 text-white shadow-md">
-                          <FaHeart />
-                        </button>
-                      </div>
-                    </div>
+          {productos
+            .filter(p => {
+              if (!activeCategory || activeCategory === 'variedades') return true;
 
-                    {/* content */}
-                    <header className="mt-3 flex-1">
-                      <h3 className="text-base md:text-lg font-semibold text-blue-900 leading-snug line-clamp-2">{producto.title}</h3>
-                      <p className="text-sm text-gray-600 mt-2 line-clamp-3">{producto.description}</p>
-                    </header>
+              // Filter "Ropa" category by specific product titles
+              if (activeCategory === 'ropa') {
+                const ropaProducts = [
+                  'Mens Casual Premium Slim Fit T-Shirts',
+                  'Mens Cotton Jacket',
+                  'Mens Casual Slim Fit',
+                  "BIYLACLESEN Women's 3-in-1 Snowboard Jacket Winter Coats",
+                  "Lock and Love Women's Removable Hooded Faux Leather Moto Biker Jacket",
+                  'Rain Jacket Women Windbreaker Striped Climbing Raincoats',
+                  "MBJ Women's Short Sleeve Boat Neck V",
+                  "Opna Women's Short Sleeve Moisture",
+                  'DANVOUY Womens T Shirt Casual Cotton Short'
+                ];
+                return ropaProducts.some(name => p.title.includes(name));
+              }
 
-                    {/* VENDEDOR CARD - Mini */}
-                    <div className="mt-3 p-3 bg-gradient-to-r from-yellow-50 to-blue-50 rounded-lg border border-yellow-200/50 seller-mini">
-                      <div className="flex items-center gap-2">
-                        <img 
-                          src={getAvatarUrl(seller.name)}
-                          alt={seller.name}
-                          className="w-8 h-8 rounded-full flex-shrink-0 border border-yellow-400"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-blue-900 truncate">{seller.name}</p>
-                          <div className="flex items-center gap-1">
-                            <FaStar className="text-yellow-400 text-xs flex-shrink-0" />
-                            <span className="text-xs text-gray-600">{seller.rating}</span>
+              // Default filter by category
+              return p.category === activeCategory;
+            })
+            .map(producto => {
+              const seller = generateSeller(producto.id);
+              const productWithSeller = { ...producto, seller };
+              return (
+                <article
+                  key={producto.id}
+                  onClick={() => handleProductClick(producto)}
+                  className="relative group perspective cursor-pointer"
+                >
+                  {/* Animated gradient border */}
+                  <div className="card-border rounded-3xl p-[2px]">
+                    <div className="card-bg rounded-3xl bg-white/95 backdrop-blur-sm p-5 flex flex-col h-full transition-transform duration-500 transform-gpu group-hover:scale-[1.02] group-hover:-translate-y-2 shadow-lg">
+                      {/* image + floating */}
+                      <div className="relative flex items-center justify-center">
+                        <div className="img-wrap w-40 h-40 flex items-center justify-center rounded-2xl bg-gradient-to-b from-blue-50 to-yellow-50 shadow-inner -mt-10 transform transition-all duration-700 group-hover:translate-y-[-6px]">
+                          <img src={producto.image} alt={producto.title} className="max-h-32 max-w-32 object-contain transform transition-transform duration-700 group-hover:scale-105" />
+                        </div>
+                        {/* quick action overlay */}
+                        <div className="absolute right-3 top-3 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <button onClick={(e) => { e.stopPropagation(); addProductToCartWithToast(productWithSeller, 1); }} title="Añadir al carrito" className="action-btn bg-yellow-500 text-white shadow-md">
+                            <FaShoppingCart />
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); addProductToCartWithToast(productWithSeller, 1); }} title="Favorito" className="action-btn bg-pink-500 text-white shadow-md">
+                            <FaHeart />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* content */}
+                      <header className="mt-3 flex-1">
+                        <h3 className="text-base md:text-lg font-semibold text-blue-900 leading-snug line-clamp-2">{producto.title}</h3>
+                        <p className="text-sm text-gray-600 mt-2 line-clamp-3">{producto.description}</p>
+                      </header>
+
+                      {/* VENDEDOR CARD - Mini */}
+                      <div className="mt-3 p-3 bg-gradient-to-r from-yellow-50 to-blue-50 rounded-lg border border-yellow-200/50 seller-mini">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={getAvatarUrl(seller.name)}
+                            alt={seller.name}
+                            className="w-8 h-8 rounded-full flex-shrink-0 border border-yellow-400"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-blue-900 truncate">{seller.name}</p>
+                            <div className="flex items-center gap-1">
+                              <FaStar className="text-yellow-400 text-xs flex-shrink-0" />
+                              <span className="text-xs text-gray-600">{seller.rating}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    <footer className="mt-3 flex items-center justify-between gap-3">
-                      <div>
-                        <div className="text-yellow-600 font-extrabold text-lg">${producto.price}</div>
-                        <div className="mt-2 flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 text-sm text-gray-600 px-2 py-1 bg-blue-50 rounded-full">
-                            {producto.category}
-                          </span>
+                      <footer className="mt-3 flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-yellow-600 font-extrabold text-lg">${producto.price}</div>
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1 text-sm text-gray-600 px-2 py-1 bg-blue-50 rounded-full">
+                              {producto.category}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="flex items-center gap-1 justify-end">
-                          {Array.from({length: Math.round(producto.rating?.rate || 4)}).map((_,i)=>(
-                            <FaStar key={i} className="text-yellow-400 text-xs md:text-sm" />
-                          ))}
+                        <div className="text-right">
+                          <div className="flex items-center gap-1 justify-end">
+                            {Array.from({ length: Math.round(producto.rating?.rate || 4) }).map((_, i) => (
+                              <FaStar key={i} className="text-yellow-400 text-xs md:text-sm" />
+                            ))}
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">{producto.rating?.count || 0} vendidos</div>
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">{producto.rating?.count || 0} vendidos</div>
-                      </div>
-                    </footer>
+                      </footer>
+                    </div>
                   </div>
-                </div>
-              </article>
-            );
-          })}
+                </article>
+              );
+            })}
         </div>
       </div>
-     </div>
-   );
- };
- 
- export default ProductList;
- 
+    </div>
+  );
+};
+
+export default ProductList;
+
 /* estilos locales animados para las cards */
-/* filepath: c:\Users\Rodrigo.Jimenez\perfil-de-usuario\src\components\ProductList.jsx (styles) */
 /* Añade al final del archivo un <style> inyectado si usas CSS-in-JS, o pega estas clases en tu CSS global */
 /*
 .perspective { perspective: 1200px; }
@@ -313,8 +336,4 @@ const ProductList = () => {
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
-*/
-/* Añadir estas clases a tu CSS global (o descomentar y pegarlas) para animación adicional:
-.action-btn { width: 40px; height: 40px; display:flex; align-items:center; justify-content:center; border-radius:8px; box-shadow:0 6px 18px rgba(2,6,23,0.12); transition: transform .2s ease, box-shadow .2s ease; }
-.action-btn:hover { transform: translateY(-4px) scale(1.05); box-shadow:0 10px 24px rgba(2,6,23,0.16); }
 */

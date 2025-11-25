@@ -23,8 +23,27 @@ export const UserProvider = ({ children }) => {
   const setUser = (u) => setUserState(u);
   const clearUser = () => setUserState(null);
 
+  const addAppointment = (appointment) => {
+    if (!user) return;
+
+    const updatedUser = {
+      ...user,
+      appointments: [...(user.appointments || []), appointment]
+    };
+
+    setUserState(updatedUser);
+
+    // Actualizar en "base de datos"
+    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    const userIndex = existingUsers.findIndex(u => u.email === user.email);
+    if (userIndex !== -1) {
+      existingUsers[userIndex] = updatedUser;
+      localStorage.setItem("users", JSON.stringify(existingUsers));
+    }
+  };
+
   return (
-    <UserContext.Provider value={{ user, setUser, clearUser }}>
+    <UserContext.Provider value={{ user, setUser, clearUser, addAppointment }}>
       {children}
     </UserContext.Provider>
   );

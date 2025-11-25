@@ -12,9 +12,8 @@ import { UserProvider, useUser } from "./context/UserContext";
 import UserProfile from "./components/UserProfile";
 
 
-function Layout({ isAuthenticated, userRole, children, onLogout }) {
+function Layout({ isAuthenticated, userRole, children, onLogout, activeCategory, setActiveCategory }) {
   const navigate = useNavigate();
-  const [activeCategory, setActiveCategory] = useState(null);
   const { cartItems } = useCart();
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const { user, clearUser } = useUser();
@@ -38,7 +37,7 @@ function Layout({ isAuthenticated, userRole, children, onLogout }) {
 
   const categories = [
     { id: "ropa", label: "Ropa", icon: <FaTshirt size={20} /> },
-    { id: "zapatos", label: "Zapatos", icon: <GiConverseShoe size={20} />},
+    { id: "zapatos", label: "Zapatos", icon: <GiConverseShoe size={20} /> },
     { id: "accesorios", label: "Accesorios", icon: <FaRing size={20} /> },
     { id: "servicios", label: "Servicios", icon: <FaConciergeBell size={20} /> },
     { id: "mascotas", label: "Mascotas", icon: <FaPaw size={20} /> },
@@ -107,19 +106,17 @@ function Layout({ isAuthenticated, userRole, children, onLogout }) {
               onMouseLeave={() => setHoveredCategory(null)}
             >
               <button
-                onClick={() => 
-                  { 
-                    if (activeCategory === category.id) {
-                      setActiveCategory(null);
-                    } else {
+                onClick={() => {
+                  if (activeCategory === category.id) {
+                    setActiveCategory(null);
+                  } else {
                     setActiveCategory(category.id)
-                    }
-                  }}
+                  }
+                }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 transform
-                  ${
-                    activeCategory === category.id || hoveredCategory === category.id
-                      ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-white shadow-lg scale-110"
-                      : "text-gray-700 hover:text-yellow-600"
+                  ${activeCategory === category.id || hoveredCategory === category.id
+                    ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-white shadow-lg scale-110"
+                    : "text-gray-700 hover:text-yellow-600"
                   }
                 `}
               >
@@ -157,10 +154,9 @@ function Layout({ isAuthenticated, userRole, children, onLogout }) {
               key={category.id}
               onClick={() => setActiveCategory(category.id)}
               className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all duration-300 whitespace-nowrap
-                ${
-                  activeCategory === category.id
-                    ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-white shadow-lg"
-                    : "text-gray-700 hover:bg-yellow-100"
+                ${activeCategory === category.id
+                  ? "bg-gradient-to-r from-yellow-400 to-yellow-500 text-white shadow-lg"
+                  : "text-gray-700 hover:bg-yellow-100"
                 }
               `}
             >
@@ -199,18 +195,21 @@ function ProtectedRoute({ isAuthenticated, userRole, path, children }) {
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  
+
   // Verificación adicional para la ruta del carrito
   if (path === '/cart' && userRole === 'vendedor') {
     return <Navigate to="/" replace />;
   }
-  
+
   return children;
 }
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const [activeCategory, setActiveCategory] = useState(null);
+
+
 
   const handleLogin = (credentials) => {
     setIsAuthenticated(true);
@@ -221,68 +220,68 @@ function App() {
     <Router>
       <UserProvider>
         <CartProvider>
-         <Routes>
-           <Route
-             path="/signUp"
-             element={
-               
-                 <SignUp onLogin={handleLogin} onClose={() => {}} />
-             }
-           />
-           <Route
-             path="/login"
-             element={
-               isAuthenticated ? (
-                 <Navigate to="/" replace />
-               ) : (
-                 <Login onLogin={handleLogin} onClose={() => {}} />
-               )
-             }
-           />
-           
-           <Route
-             path="/cart"
-             element={
-               <ProtectedRoute 
-                 isAuthenticated={isAuthenticated} 
-                 userRole={userRole}
-                 path="/cart"
-               >
-                <Layout isAuthenticated={isAuthenticated} userRole={userRole} onLogout={() => setIsAuthenticated(false)}>
-                  <CartSidebar onClose={() => {}} />
+          <Routes>
+            <Route
+              path="/signUp"
+              element={
+
+                <SignUp onLogin={handleLogin} onClose={() => { }} />
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                isAuthenticated ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <Login onLogin={handleLogin} onClose={() => { }} />
+                )
+              }
+            />
+
+            <Route
+              path="/cart"
+              element={
+                <ProtectedRoute
+                  isAuthenticated={isAuthenticated}
+                  userRole={userRole}
+                  path="/cart"
+                >
+                  <Layout isAuthenticated={isAuthenticated} userRole={userRole} onLogout={() => setIsAuthenticated(false)} activeCategory={activeCategory} setActiveCategory={setActiveCategory}>
+                    <CartSidebar onClose={() => { }} />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute
+                  isAuthenticated={isAuthenticated}
+                  userRole={userRole}
+                  path="/profile"
+                >
+                  <Layout isAuthenticated={isAuthenticated} userRole={userRole} onLogout={() => setIsAuthenticated(false)} activeCategory={activeCategory} setActiveCategory={setActiveCategory}>
+                    <UserProfile />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/"
+              element={
+                <Layout isAuthenticated={isAuthenticated} userRole={userRole} onLogout={() => setIsAuthenticated(false)} activeCategory={activeCategory} setActiveCategory={setActiveCategory}>
+                  <ProductList userRole={userRole} activeCategory={activeCategory} />
                 </Layout>
-               </ProtectedRoute>
-             }
-           />
-           
-           <Route
-             path="/profile"
-             element={
-               <ProtectedRoute 
-                 isAuthenticated={isAuthenticated} 
-                 userRole={userRole}
-                 path="/profile"
-               >
-                <Layout isAuthenticated={isAuthenticated} userRole={userRole} onLogout={() => setIsAuthenticated(false)}>
-                  <UserProfile />
-                </Layout>
-               </ProtectedRoute>
-             }
-           />
-           
-           <Route
-             path="/"
-             element={
-              <Layout isAuthenticated={isAuthenticated} userRole={userRole} onLogout={() => setIsAuthenticated(false)}>
-                <ProductList userRole={userRole} />
-              </Layout>
-             }
-           />
-         </Routes>
+              }
+            />
+          </Routes>
         </CartProvider>
       </UserProvider>
-     </Router>
-   );
- }
+    </Router>
+  );
+}
 
- export default App;
+export default App;

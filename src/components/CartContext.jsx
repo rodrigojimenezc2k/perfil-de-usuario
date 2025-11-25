@@ -21,10 +21,20 @@ export const CartProvider = ({ children }) => {
     });
   };
 
+  const removeFromCart = (productId) => {
+    setCartItems(prev => prev.filter(item => item.id !== productId));
+  };
+
+  const removeItems = (itemIds) => {
+    setCartItems(prev => prev.filter(item => !itemIds.includes(item.id)));
+  };
+
+  const clearCart = () => setCartItems([]);
+
   const totalPrice = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ cartItems, addToCart, totalPrice }}>
+    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, removeItems, clearCart, totalPrice }}>
       {children}
     </CartContext.Provider>
   );

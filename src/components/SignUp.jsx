@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaStore, FaShoppingBag, FaExchangeAlt, FaUpload, FaTimes } from "react-icons/fa";
+import { FaUpload, FaTimes } from "react-icons/fa";
 
-const SignUp = ({ onSignUp }) => {
+const SignUp = ({ onLogin }) => {
   const navigate = useNavigate();
   const [bgImage, setBgImage] = useState("");
   const [formData, setFormData] = useState({
@@ -10,30 +10,11 @@ const SignUp = ({ onSignUp }) => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "",
   });
   const [document, setDocument] = useState(null);
   const [documentPreview, setDocumentPreview] = useState(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
-  const roles = [
-    { id: "vendedor", label: "Vendedor", icon: <FaStore size={24} /> },
-    { id: "comprador", label: "Comprador", icon: <FaShoppingBag size={24} /> },
-    {
-      id: "vendedor-comprador",
-      label: "Vendedor/Comprador",
-      icon: <FaExchangeAlt size={24} />,
-    },
-  ];
-
-  const documentTypes = [
-    "Autenticación",
-    "Historia Académica",
-    "INE",
-    "Credencial UNAM",
-    "Otro",
-  ];
 
   useEffect(() => {
     const n = Math.floor(Math.random() * 4) + 1;
@@ -45,13 +26,6 @@ const SignUp = ({ onSignUp }) => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }));
-  };
-
-  const handleRoleSelect = (roleId) => {
-    setFormData((prev) => ({
-      ...prev,
-      role: roleId,
     }));
   };
 
@@ -91,7 +65,7 @@ const SignUp = ({ onSignUp }) => {
     setError("");
     setSuccess("");
 
-    if (!formData.nombre || !formData.email || !formData.password || !formData.confirmPassword || !formData.role) {
+    if (!formData.nombre || !formData.email || !formData.password || !formData.confirmPassword) {
       setError("Por favor, completa todos los campos");
       return;
     }
@@ -111,10 +85,34 @@ const SignUp = ({ onSignUp }) => {
       return;
     }
 
-    // Aquí iría la lógica para enviar los datos (onSignUp con FormData)
-    onSignUp({ ...formData, document });
-    setSuccess("¡Registro completado! Redirigiendo...");
-    setTimeout(() => navigate("/"), 2000);
+    // Guardar usuario en "base de datos" (localStorage)
+    const newUser = {
+      id: Date.now(),
+      name: formData.nombre,
+      email: formData.email,
+      password: formData.password,
+      role: "user", // Rol por defecto
+      document: {
+        name: document.name,
+        // En una app real, aquí iría la URL del archivo subido.
+        // Simulamos una URL local para el preview si es imagen
+        url: documentPreview || "#"
+      },
+      appointments: []
+    };
+
+    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+
+    if (existingUsers.some(u => u.email === newUser.email)) {
+      setError("El correo electrónico ya está registrado");
+      return;
+    }
+
+    existingUsers.push(newUser);
+    localStorage.setItem("users", JSON.stringify(existingUsers));
+
+    setSuccess("¡Registro completado! Redirigiendo al login...");
+    setTimeout(() => navigate("/login"), 2000);
   };
 
   const onClose = () => {
@@ -209,31 +207,6 @@ const SignUp = ({ onSignUp }) => {
                 className="w-full p-3 border-2 border-yellow-500/30 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-yellow-500 bg-white/50 transition-all"
                 placeholder="Confirma tu contraseña"
               />
-            </div>
-
-            {/* Rol */}
-            <div className="animate-slideInDown" style={{ animationDelay: "0.5s" }}>
-              <label className="block text-blue-900 font-medium mb-2">
-                Selecciona tu rol
-              </label>
-              <div className="grid grid-cols-3 gap-4">
-                {roles.map((role) => (
-                  <button
-                    key={role.id}
-                    type="button"
-                    onClick={() => handleRoleSelect(role.id)}
-                    className={`p-4 rounded-lg border-2 flex flex-col items-center justify-center gap-2 transition-all transform hover:scale-105
-                    ${
-                      formData.role === role.id
-                        ? "border-yellow-500 bg-blue-50 text-blue-800 shadow-lg scale-105"
-                        : "border-yellow-500/30 hover:border-yellow-500/50 hover:bg-blue-50/50"
-                    }`}
-                  >
-                    {role.icon}
-                    <span className="text-sm font-medium">{role.label}</span>
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Carga de Documentos */}
@@ -382,3 +355,4 @@ const SignUp = ({ onSignUp }) => {
 };
 
 export default SignUp;
+

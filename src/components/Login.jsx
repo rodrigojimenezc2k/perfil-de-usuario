@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaStore, FaShoppingBag, FaExchangeAlt } from "react-icons/fa";
 import { useUser } from "../context/UserContext";
 
 const Login = ({ onLogin }) => {
@@ -9,25 +8,29 @@ const Login = ({ onLogin }) => {
   const [credentials, setCredentials] = useState({
     email: "",
     password: "",
-    role: "",
   });
   const [bgImage, setBgImage] = useState("");
   const [error, setError] = useState("");
-
-  const roles = [
-    { id: "vendedor", label: "Vendedor", icon: <FaStore size={24} /> },
-    { id: "comprador", label: "Comprador", icon: <FaShoppingBag size={24} /> },
-    {
-      id: "vendedor-comprador",
-      label: "Vendedor/Comprador",
-      icon: <FaExchangeAlt size={24} />,
-    },
-  ];
 
   useEffect(() => {
     // Selecciona aleatoriamente 1..4 y arma la ruta desde public/
     const n = Math.floor(Math.random() * 4) + 1;
     setBgImage(`${process.env.PUBLIC_URL}/${n}.png`);
+
+    // Ensure default user exists
+    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    const defaultUserEmail = "jas.perea02@gmail.com";
+    if (!existingUsers.find(u => u.email === defaultUserEmail)) {
+      const defaultUser = {
+        name: "Admin User",
+        email: defaultUserEmail,
+        password: "admin",
+        role: "comprador", // Default to buyer to allow cart access
+        appointments: []
+      };
+      existingUsers.push(defaultUser);
+      localStorage.setItem("users", JSON.stringify(existingUsers));
+    }
   }, []);
 
   const handleChange = (e) => {
@@ -40,27 +43,24 @@ const Login = ({ onLogin }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (credentials.email && credentials.password && credentials.role) {
-      onLogin(credentials);
-      // Guardar en el store (persistente)
-      setUser({
-        email: credentials.email,
-        role: credentials.role,
-        // nombre opcional: usar email como fallback
-        name: credentials.name || credentials.email.split("@")[0],
-      });
-      navigate("/");
-      setError("");
-    } else {
-      setError("Por favor, completa todos los campos y selecciona un rol");
-    }
-  };
+    if (credentials.email && credentials.password) {
+      // Validar contra "base de datos" (localStorage)
+      const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+      const user = existingUsers.find(
+        (u) => u.email === credentials.email && u.password === credentials.password
+      );
 
-  const handleRoleSelect = (roleId) => {
-    setCredentials((prev) => ({
-      ...prev,
-      role: roleId,
-    }));
+      if (user) {
+        onLogin({ ...user, role: user.role || "user" });
+        setUser(user);
+        navigate("/");
+        setError("");
+      } else {
+        setError("Credenciales inválidas");
+      }
+    } else {
+      setError("Por favor, completa todos los campos");
+    }
   };
 
   const onClose = () => {
@@ -76,7 +76,7 @@ const Login = ({ onLogin }) => {
           backgroundImage: `linear-gradient(to bottom right, rgba(2,37,77,0.6), rgba(174,132,22,0.12)), url(${bgImage})`,
         }}
       ></div>
-      
+
       {/* Overlay con patrón */}
       <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.2)_1px,_transparent_1px)] bg-[size:20px_20px]"></div>
 
@@ -123,30 +123,6 @@ const Login = ({ onLogin }) => {
               />
             </div>
 
-            <div>
-              <label className="block text-blue-900 font-medium mb-2">
-                Selecciona tu rol
-              </label>
-              <div className="grid grid-cols-3 gap-4">
-                {roles.map((role) => (
-                  <button
-                    key={role.id}
-                    type="button"
-                    onClick={() => handleRoleSelect(role.id)}
-                    className={`p-4 rounded-lg border-2 flex flex-col items-center justify-center gap-2 transition-all
-                    ${
-                      credentials.role === role.id
-                        ? "border-yellow-500 bg-blue-50 text-blue-800"
-                        : "border-yellow-500/30 hover:border-yellow-500/50 hover:bg-blue-50/50"
-                    }`}
-                  >
-                    {role.icon}
-                    <span className="text-sm font-medium">{role.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <button
@@ -173,3 +149,4 @@ const Login = ({ onLogin }) => {
 };
 
 export default Login;
+
