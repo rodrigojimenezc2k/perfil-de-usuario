@@ -2,7 +2,7 @@
   "name": "perfil-de-usuario",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://rodrigojimenezc2k.github.io/perfil-de-usuario",
+  "homepage": "https://tiendita-stack.github.io/perfil-de-usuario",
   "dependencies": {
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
