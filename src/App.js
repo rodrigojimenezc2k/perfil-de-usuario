@@ -217,7 +217,7 @@ function App() {
   };
 
   return (
-    <Router>
+    <Router basename="/perfil-de-usuario">
       <UserProvider>
         <CartProvider>
           <Routes>
