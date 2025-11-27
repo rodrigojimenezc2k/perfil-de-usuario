@@ -31,46 +31,55 @@ const ProductList = ({ activeCategory }) => {
   // Añade al carrito mostrando un toast animado en lugar de alert()
   const addProductToCartWithToast = (producto, qty = 1) => {
     addToCart(producto, qty);
-    setToastMessage(`Añadido al carrito: ${qty} ${producto.title}`);
+
+    // Show toast notification
+    setToastMessage(`${producto.title} añadido al carrito`);
     setToastVisible(true);
-    // auto-hide
-    setTimeout(() => setToastVisible(false), 2600);
+    setTimeout(() => setToastVisible(false), 3000);
   };
 
+  // Fetch products from API
   useEffect(() => {
-    fetch('https://fakestoreapi.com/products')
-      .then(res => res.json())
-      .then(data => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('https://fakestoreapi.com/products');
+        const data = await response.json();
         setProductos(data);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
         setLoading(false);
-      })
-      .catch(err => {
-        console.error('Error al cargar productos:', err);
-        setLoading(false);
-      });
+      }
+    };
+    fetchProducts();
   }, []);
 
+  // Handle product click to open modal
   const handleProductClick = (producto) => {
     setSelectedProduct(producto);
-    setIsModalOpen(true);
     setQuantity(1);
+    setIsModalOpen(true);
   };
 
-  const handleAddToCart = () => {
-    addProductToCartWithToast(selectedProduct, quantity);
-    setIsModalOpen(false);
-  };
-
+  // Handle quantity change
   const handleQuantityChange = (e) => {
-    const value = Math.max(1, parseInt(e.target.value) || 1);
-    setQuantity(value);
+    const value = parseInt(e.target.value);
+    if (value >= 1) {
+      setQuantity(value);
+    }
   };
 
-  if (loading) {
-    return <div className="text-center text-lg p-10">Cargando productos...</div>;
-  }
+  // Handle add to cart from modal
+  const handleAddToCart = () => {
+    if (selectedProduct) {
+      const seller = generateSeller(selectedProduct.id);
+      const productWithSeller = { ...selectedProduct, seller };
+      addProductToCartWithToast(productWithSeller, quantity);
+      setIsModalOpen(false);
+    }
+  };
 
-  // Filter products
+  // Filter products based on active category
   const filteredProducts = productos.filter(p => {
     if (!activeCategory || activeCategory === 'variedades') return true;
 

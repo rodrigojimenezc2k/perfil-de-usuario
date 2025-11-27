@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
-import { FaEdit, FaSave, FaSignOutAlt, FaArrowLeft, FaCalendarAlt, FaShoppingCart, FaGraduationCap , FaClock} from "react-icons/fa";
+import { FaEdit, FaSave, FaSignOutAlt, FaArrowLeft, FaCalendarAlt, FaShoppingCart, FaGraduationCap, FaClock } from "react-icons/fa";
 
 export default function UserProfile() {
   const { user, setUser, clearUser } = useUser();
@@ -12,11 +12,16 @@ export default function UserProfile() {
     email: user?.email || "",
   });
   const [msg, setMsg] = useState("");
+
   // --- Calendario: estado y utilidades ---
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
+
+  // Modal de entrega
+  const [deliveryModalOpen, setDeliveryModalOpen] = useState(false);
+  const [selectedDeliveryDate, setSelectedDeliveryDate] = useState(null);
 
   const prevMonth = () => setCurrentMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
   const nextMonth = () => setCurrentMonth((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
@@ -28,44 +33,89 @@ export default function UserProfile() {
     return `${y}-${m}-${day}`;
   };
 
-  // Eventos estáticos del plan semestral UNAM (ejemplos; ajustar según necesites)
-  const year = currentMonth.getFullYear();
-  const unamPlanEvents = [
-    { date: formatDate(new Date(year, 0, 20)), title: "Inicio de semestre", type: "unam" },
-    { date: formatDate(new Date(year, 2, 15)), title: "Vacaciones intersemestrales", type: "unam" },
-    { date: formatDate(new Date(year, 4, 10)), title: "Evaluaciones parciales", type: "unam" },
-    { date: formatDate(new Date(year, 5, 20)), title: "Fin de semestre", type: "unam" },
-  ];
-
-  // Eventos del usuario (si vienen en el contexto user.appointments), si no, ejemplo vacío
-  const userAppointments = (user && user.appointments) || [
-    // ejemplos de citas (se pueden eliminar si ya existen en user)
-    { date: formatDate(new Date(year, currentMonth.getMonth(), 5)), title: "Cita de compra - Zapatos", type: "appointment" },
-    { date: formatDate(new Date(year, currentMonth.getMonth(), 12)), title: "Venta - Ropa", type: "appointment" },
-  ];
-
-  // Eventos generales (otros)
-  const generalEvents = [
-    { date: formatDate(new Date(year, currentMonth.getMonth(), 8)), title: "Feria universitaria", type: "general" },
-  ];
-
-  // Mapear eventos por fecha
+  // Eventos del usuario (si vienen en el contexto user.appointments)
+  const userAppointments = (user && user.appointments) || [];
   const eventsMap = {};
-  [...unamPlanEvents, ...userAppointments, ...generalEvents].forEach((ev) => {
+  userAppointments.forEach((ev) => {
     if (!eventsMap[ev.date]) eventsMap[ev.date] = [];
     eventsMap[ev.date].push(ev);
   });
 
-  // Generar matriz de días para el mes actual (array de fechas o null para celdas vacías)
+  // --- Lógica de Fechas Importantes ---
+  const getDayInfo = (date) => {
+    if (!date) return null;
+    const dateStr = formatDate(date);
+    const dayOfWeek = date.getDay(); // 0 = Domingo
+
+    // Fechas clave
+    const sem1Start = "2025-08-11";
+    const sem1End = "2025-11-28";
+    const sem2Start = "2026-02-03";
+    const sem2End = "2026-05-29";
+
+    const examStart = "2025-12-01";
+    const examEnd = "2025-12-12";
+
+    // Verificar rangos
+    const isSem1 = dateStr >= sem1Start && dateStr <= sem1End;
+    const isSem2 = dateStr >= sem2Start && dateStr <= sem2End;
+    const isSemester = isSem1 || isSem2;
+
+    const isExam = dateStr >= examStart && dateStr <= examEnd;
+
+    // Vacaciones: Periodo entre fin del sem1 e inicio del sem2, excluyendo exámenes
+    const isVacation1 = dateStr > sem1End && dateStr < examStart;
+    const isVacation2 = dateStr > examEnd && dateStr < sem2Start;
+    const isVacation3 = dateStr > sem2End; // Vacaciones después del sem2
+    const isVacation = isVacation1 || isVacation2 || isVacation3;
+
+    let info = { type: "regular", color: "bg-white", icon: null, label: null, canDeliver: true };
+
+    // Domingos no se entrega
+    if (dayOfWeek === 0) {
+      info.canDeliver = false;
+    }
+
+    // Prioridad de estilos: Examen > Vacaciones > Inicio/Fin Semestre > Semestre Regular
+    if (isExam) {
+      info = { ...info, type: "exam", color: "bg-orange-100 border-orange-300", icon: FaEdit, label: "Exámenes" };
+    } else if (isVacation) {
+      info = { ...info, type: "vacation", color: "bg-purple-100 border-purple-300", icon: FaSignOutAlt, label: "Vacaciones", canDeliver: false };
+    } else if (dateStr === sem1Start || dateStr === sem2Start) {
+      info = { ...info, type: "semStart", color: "bg-green-100 border-green-300", icon: FaGraduationCap, label: "Inicio Semestre" };
+    } else if (dateStr === sem1End || dateStr === sem2End) {
+      info = { ...info, type: "semEnd", color: "bg-green-100 border-green-300", icon: FaGraduationCap, label: "Fin Semestre" };
+    } else if (isSemester) {
+      info = { ...info, type: "semester", color: "bg-green-50 border-green-200", icon: null, label: null };
+    }
+
+    return info;
+  };
+
+  const handleDayClick = (date) => {
+    if (!date) return;
+    const dateStr = formatDate(date);
+    const hasEvents = eventsMap[dateStr] && eventsMap[dateStr].length > 0;
+
+    // Solo abrir si hay entregas (citas) para ese día
+    if (hasEvents) {
+      setSelectedDeliveryDate(date);
+      setDeliveryModalOpen(true);
+    }
+  };
+
+  // Generar matriz de días para el mes actual
   const firstDayIndex = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay(); // 0=Dom
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
   const monthDays = [];
-  // añadir celdas vacías previas
   for (let i = 0; i < firstDayIndex; i++) monthDays.push(null);
   for (let d = 1; d <= daysInMonth; d++) {
     monthDays.push(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), d));
   }
-  // --- fin calendario ---
+
+  // Obtener eventos del día seleccionado para el modal
+  const selectedDateStr = selectedDeliveryDate ? formatDate(selectedDeliveryDate) : null;
+  const selectedDayEvents = selectedDateStr ? eventsMap[selectedDateStr] || [] : [];
 
   if (!user) {
     return (
@@ -224,14 +274,14 @@ export default function UserProfile() {
           Perfil del usuario
         </div>
 
-        {/* --- Calendario mensual grande con overlay semestral rojo --- */}
+        {/* --- Calendario mensual mejorado --- */}
         <section className="mt-8 w-full">
           <div className="relative bg-white/95 border border-yellow-100 rounded-2xl shadow-2xl p-4 md:p-6 backdrop-blur-sm transform transition-all duration-500 hover:scale-[1.01]">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <FaCalendarAlt className="text-yellow-600" />
-                <h3 className="text-xl md:text-2xl font-semibold text-blue-900">Calendario</h3>
-                <span className="text-sm text-gray-500">Vista mensual — Plan semestral resaltado</span>
+                <h3 className="text-xl md:text-2xl font-semibold text-blue-900">Calendario Académico</h3>
+                <span className="text-sm text-gray-500 hidden md:inline">Plan Semestral y Entregas</span>
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={prevMonth} className="px-3 py-1 rounded-md bg-gray-100 hover:bg-gray-200 transition">◀</button>
@@ -242,124 +292,184 @@ export default function UserProfile() {
               </div>
             </div>
 
-            {/* encabezados de días (más grandes) */}
-            <div className="grid grid-cols-7 gap-4 text-sm md:text-lg">
+            {/* encabezados de días */}
+            <div className="grid grid-cols-7 gap-4 text-sm md:text-lg mb-2">
               {["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"].map((d) => (
                 <div key={d} className="text-center text-gray-600 font-semibold">{d}</div>
               ))}
             </div>
 
-            {/* contenedor relativo que aloja la rejilla + overlay rojo */}
-            <div className="relative mt-3">
-              {/* REJILLA PRINCIPAL (interactiva) */}
-              <div className="grid grid-cols-7 gap-4 mt-2 z-10">
-                {monthDays.map((dt, idx) => {
-                  const dateStr = dt ? formatDate(dt) : null;
-                  const evs = dateStr ? eventsMap[dateStr] : null;
-                  return (
-                    <div
-                      key={idx}
-                      className={`min-h-[160px] p-4 rounded-lg transition-transform transform hover:scale-[1.02] bg-white border border-transparent shadow-sm`}
-                    >
-                      {dt ? (
-                        <>
-                          <div className="flex items-start justify-between">
-                            <div className="text-base md:text-lg font-semibold text-gray-700">{dt.getDate()}</div>
-                          </div>
+            {/* REJILLA PRINCIPAL */}
+            <div className="grid grid-cols-7 gap-4">
+              {monthDays.map((dt, idx) => {
+                const dateStr = dt ? formatDate(dt) : null;
+                const evs = dateStr ? eventsMap[dateStr] : null;
+                const hasEvents = evs && evs.length > 0;
+                const dayInfo = getDayInfo(dt);
 
-                          <div className="mt-3 flex flex-col gap-2 text-sm">
-                            {evs ? evs.slice(0, 3).map((e, i) => {
-                              const key = `${dateStr}-${i}`;
+                // Estilos base
+                let cellClass = "min-h-[140px] p-3 rounded-xl transition-all duration-300 border shadow-sm relative overflow-hidden group ";
 
-                              // Different styles for different event types
-                              let bgColor, borderColor, textColor, Icon;
+                if (!dt) {
+                  return <div key={idx} className="min-h-[140px]"></div>;
+                }
 
-                              if (e.type === "unam") {
-                                bgColor = "bg-red-50";
-                                borderColor = "border-red-300";
-                                textColor = "text-red-700";
-                                Icon = FaGraduationCap;
-                              } else if (e.type === "appointment") {
-                                bgColor = "bg-gradient-to-r from-yellow-50 to-orange-50";
-                                borderColor = "border-yellow-400";
-                                textColor = "text-yellow-800";
-                                Icon = FaShoppingCart;
-                              } else {
-                                bgColor = "bg-blue-50";
-                                borderColor = "border-blue-300";
-                                textColor = "text-blue-700";
-                                Icon = FaCalendarAlt;
-                              }
+                // Aplicar estilos según el tipo de día
+                if (dayInfo.type === "vacation") {
+                  cellClass += "bg-purple-50 border-purple-200 hover:bg-purple-100";
+                } else if (dayInfo.type === "exam") {
+                  cellClass += "bg-orange-50 border-orange-200 hover:bg-orange-100";
+                } else if (dayInfo.type === "semStart" || dayInfo.type === "semEnd") {
+                  cellClass += "bg-blue-50 border-blue-300 hover:bg-blue-100 ring-2 ring-blue-100";
+                } else if (dayInfo.type === "semester") {
+                  cellClass += "bg-green-50 border-green-100 hover:bg-green-100 hover:border-green-200";
+                } else if (!dayInfo.canDeliver) {
+                  cellClass += "bg-gray-50 border-gray-200 opacity-70 cursor-not-allowed";
+                } else {
+                  cellClass += "bg-white border-gray-100 hover:border-yellow-300 hover:shadow-md cursor-pointer";
+                }
 
-                              return (
-                                <div
-                                  key={key}
-                                  title={e.seller ? `${e.title}\nVendedor: ${e.seller}` : e.title}
-                                  className={`flex items-start gap-2 p-2 rounded-md border ${bgColor} ${borderColor} transform transition-all duration-300 hover:scale-105 hover:shadow-md cursor-pointer`}
-                                >
-                                  <Icon className={`text-sm mt-0.5 flex-shrink-0 ${textColor}`} />
-                                  <div className="flex-1 min-w-0">
-                                    <div className={`text-xs font-medium ${textColor} truncate`}>{e.title}</div>
-                                    {e.seller && (
-                                      <div className="text-xs text-gray-600 mt-0.5 truncate">
-                                        {e.seller}
-                                      </div>
-                                    )}
-                                    {e.time && (
-                                      <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
-                                        <FaClock className="text-xs" /> {e.time}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            }) : (
-                              <div className="text-xs text-gray-300">—</div>
-                            )}
-                          </div>
-                        </>
-                      ) : null}
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => handleDayClick(dt)}
+                    className={cellClass}
+                  >
+                    <div className="flex justify-between items-start">
+                      <span className={`text-lg font-bold ${dayInfo.type === 'vacation' ? 'text-purple-700' : dayInfo.type === 'exam' ? 'text-orange-700' : dayInfo.type === 'semester' || dayInfo.type === 'semStart' || dayInfo.type === 'semEnd' ? 'text-green-800' : 'text-gray-700'}`}>
+                        {dt.getDate()}
+                      </span>
+                      {dayInfo.icon && (
+                        <dayInfo.icon className={`text-lg ${dayInfo.type === 'vacation' ? 'text-purple-500' : dayInfo.type === 'exam' ? 'text-orange-500' : 'text-blue-500'}`} />
+                      )}
                     </div>
-                  );
-                })}
-              </div>
 
-              {/* OVERLAY SEMESTRAL ROJO (transparente, encima de la rejilla) */}
-              <div className="absolute inset-0 z-20 pointer-events-none">
-                <div className="grid grid-cols-7 gap-4 mt-2 h-full">
-                  {monthDays.map((dt, idx) => {
-                    const dateStr = dt ? formatDate(dt) : null;
-                    const hasUnam = dateStr ? unamPlanEvents.some(u => u.date === dateStr) : false;
-                    return (
-                      <div key={`overlay-${idx}`} className="min-h-[160px] p-0">
-                        {hasUnam ? (
-                          <div className="h-full flex items-start justify-center">
-                            <div className="w-full mx-2 -mt-2 rounded-lg bg-red-500/20 border border-red-300/40 backdrop-blur-sm transform transition-all duration-700 animate-fadeInUp" />
-                          </div>
-                        ) : null}
+                    {/* Etiqueta del día especial */}
+                    {dayInfo.label && (
+                      <div className={`mt-1 text-xs font-semibold px-2 py-0.5 rounded-full inline-block ${dayInfo.type === 'vacation' ? 'bg-purple-200 text-purple-800' : dayInfo.type === 'exam' ? 'bg-orange-200 text-orange-800' : dayInfo.type === 'semester' || dayInfo.type === 'semStart' || dayInfo.type === 'semEnd' ? 'bg-green-200 text-green-800' : 'bg-blue-200 text-blue-800'}`}>
+                        {dayInfo.label}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                    )}
+
+                    {/* Eventos/Citas del usuario */}
+                    <div className="mt-2 space-y-1">
+                      {evs && evs.map((e, i) => (
+                        <div key={i} className="text-xs bg-yellow-100 text-yellow-800 p-1 rounded border border-yellow-200 truncate">
+                          {e.title}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Hover effect for delivery - SOLO si hay eventos */}
+                    {hasEvents && (
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-green-600/10 backdrop-blur-[1px]">
+                        <span className="bg-white text-green-700 text-xs font-bold px-2 py-1 rounded-full shadow-sm border border-green-200">
+                          Ver Detalles
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            {/* leyenda más grande y con efecto */}
-            <div className="mt-5 flex items-center gap-4 flex-wrap text-base md:text-lg">
+            {/* Leyenda */}
+            <div className="mt-6 flex flex-wrap gap-4 text-sm justify-center bg-gray-50 p-3 rounded-lg border border-gray-100">
               <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded-full bg-red-500/90 inline-block shadow-sm" /> <span className="text-gray-700">Plan semestral UNAM</span>
+                <span className="w-3 h-3 rounded-full bg-green-500"></span> <span>Semestre (Activo)</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded-full bg-yellow-500 inline-block shadow-sm" /> <span className="text-gray-700">Citas compras/ventas</span>
+                <span className="w-3 h-3 rounded-full bg-orange-500"></span> <span>Exámenes</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded-full bg-blue-500 inline-block shadow-sm" /> <span className="text-gray-700">Eventos generales</span>
+                <span className="w-3 h-3 rounded-full bg-purple-500"></span> <span>Vacaciones</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-gray-300"></span> <span>No disponible (Domingos)</span>
               </div>
             </div>
           </div>
         </section>
-        {/* --- fin calendario --- */}
       </div>
+
+      {/* MODAL DE DETALLES DE ENTREGA */}
+      {deliveryModalOpen && selectedDeliveryDate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-blue-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-scaleIn border-2 border-green-400">
+            {/* Header con gradiente */}
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 text-white relative">
+              <button
+                onClick={() => setDeliveryModalOpen(false)}
+                className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl font-bold transition-colors"
+              >
+                &times;
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-3 rounded-full backdrop-blur-md">
+                  <FaShoppingCart className="text-2xl" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Detalles de Entrega</h3>
+                  <p className="text-white/90 text-sm">
+                    {selectedDeliveryDate.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="space-y-4">
+                {selectedDayEvents.length > 0 ? (
+                  selectedDayEvents.map((event, idx) => (
+                    <div key={idx} className="space-y-4 border-b border-gray-100 last:border-0 pb-4 last:pb-0">
+                      <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                          <FaClock className="text-blue-500" /> {event.title}
+                        </h4>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                          <span className="text-sm font-medium text-green-700">Confirmado</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
+                        <h4 className="font-semibold text-yellow-800 mb-2">Información de Entrega</h4>
+                        <div className="space-y-2 text-sm text-gray-700">
+                          <div className="flex justify-between border-b border-yellow-200 pb-1">
+                            <span className="font-medium">Horario:</span>
+                            <span>{event.time || "Por definir"}</span>
+                          </div>
+                          {event.location && (
+                            <div className="flex justify-between border-b border-yellow-200 pb-1">
+                              <span className="font-medium">Lugar:</span>
+                              <span>{event.location}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between">
+                            <span className="font-medium">ID Pedido:</span>
+                            <span className="text-xs font-mono">{event.id}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    No hay detalles disponibles para esta fecha.
+                  </div>
+                )}
+
+                <button
+                  className="w-full py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-all"
+                  onClick={() => setDeliveryModalOpen(false)}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes blob {
@@ -375,19 +485,18 @@ export default function UserProfile() {
         }
         .animate-blob { animation: blob 6s ease-in-out infinite; }
         .animate-blobSlow { animation: blobSlow 10s ease-in-out infinite; }
-        .animate-pulse { animation: pulse 1.6s infinite; }
-        @keyframes pulse {
-          0% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.25); opacity: 0.8; }
-          100% { transform: scale(1); opacity: 1; }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
-        @keyframes fadeInUp {
-          0% { opacity: 0; transform: translateY(10px); }
-          100% { opacity: 1; transform: translateY(0); }
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+        
+        @keyframes scaleIn {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
         }
-        .animate-fadeInUp {
-          animation: fadeInUp 0.6s ease-out forwards;
-        }
+        .animate-scaleIn { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       `}</style>
     </div>
   );
