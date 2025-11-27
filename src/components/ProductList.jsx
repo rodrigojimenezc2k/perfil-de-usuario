@@ -4,7 +4,7 @@ import { FaHeart, FaStar, FaShoppingCart, FaMapMarkerAlt, FaEnvelope } from "rea
 
 const ProductList = ({ activeCategory }) => {
   const [productos, setProductos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
