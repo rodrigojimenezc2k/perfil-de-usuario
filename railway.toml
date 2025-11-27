@@ -1,0 +1,7 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npx serve -s build -l 8000"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
